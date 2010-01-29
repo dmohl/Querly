@@ -39,21 +39,29 @@ run_all() ->
 	io:format("~nquerly_tests - Tests complete.~n~n").
 	
 test_select_all() ->
-	ResultSet = querly:select(#person{_ = '_'}),
+	DefaultRecord = #person{},
+	RecordFieldNames = record_info(fields, person),
+	ResultSet = querly:select(#person{_ = '_'}, DefaultRecord, RecordFieldNames, #person.idno),
 	Result = erlang:length(ResultSet),
 	test_helper:display_message({"test_select_all", Result == 4, Result}).
 	
 test_select_all_jimmy() ->
-	ResultSet = querly:select(#person{firstName="Jimmy",  _ = '_'}),
+	DefaultRecord = #person{},
+	RecordFieldNames = record_info(fields, person),
+	ResultSet = querly:select(#person{firstName="Jimmy",  _ = '_'}, DefaultRecord, RecordFieldNames, #person.idno),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"test_select_all_jimmy", Result == 2, Result}).
 
 test_select_all_smith() ->
-	ResultSet = querly:select(#person{lastName="Smith",  _ = '_'}),
+	DefaultRecord = #person{},
+	RecordFieldNames = record_info(fields, person),
+	ResultSet = querly:select(#person{lastName="Smith",  _ = '_'}, DefaultRecord, RecordFieldNames, #person.idno),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"test_select_all_smith", Result == 2, Result}).
 
 test_select_jimmy_smith() ->
-	ResultSet = querly:select(#person{firstName="Jimmy", lastName="Smith",  _ = '_'}),
+	DefaultRecord = #person{},
+	RecordFieldNames = record_info(fields, person),
+	ResultSet = querly:select(#person{firstName="Jimmy", lastName="Smith",  _ = '_'}, DefaultRecord, RecordFieldNames, #person.idno),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"test_select_jimmy_smith", Result == 1, Result}).

@@ -2,7 +2,7 @@
 -author('Dan Mohl').
 
 -export([start/0, build_json/2, build_record/3, doc_create/3, doc_create/4, db_info/1, db_create/1, doc_get_all/1, doc_get/2,
-		get_person_table/1]).
+		get_table/1]).
 
 -include_lib("record_definitions.hrl").
 
@@ -20,18 +20,18 @@ build_json(RecordToTransform, RecordFieldNames) ->
 build_record(Json, DefaultRecord, RecordFieldNames) ->
     rfc4627:to_record(Json, DefaultRecord, RecordFieldNames).
 
-get_person_table(PeopleTable) ->
+get_table(Table) ->
 	receive
-		{From, get_person_table, PrimaryKeyPosition, DefaultRecord, RecordFieldNames} ->
-			case PeopleTable of
+		{From, get_table, PrimaryKeyPosition, DefaultRecord, RecordFieldNames} ->
+			case Table of
 				undefined -> 
-					NewPeopleTable = ets:new(people, [{keypos, PrimaryKeyPosition}]),
-					build_table_from_couch(NewPeopleTable, DefaultRecord, RecordFieldNames),
-					From ! {people_table, NewPeopleTable},
-					get_person_table(NewPeopleTable);
+					NewTable = ets:new(table, [{keypos, PrimaryKeyPosition}]),
+					build_table_from_couch(NewTable, DefaultRecord, RecordFieldNames),
+					From ! {table_results, NewTable},
+					get_table(NewTable);
 				_ -> 
-					From ! {people_table, PeopleTable},
-					get_person_table(PeopleTable)
+					From ! {table_results, Table},
+					get_table(Table)
 			end
 	end.
     

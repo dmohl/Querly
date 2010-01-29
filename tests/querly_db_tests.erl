@@ -90,12 +90,12 @@ test_should_return_expected_person_record() ->
 	
 test_should_load_table_records() ->
 	io:format("Started test_should_load_table_records...Please wait...~n"),
-	Pid = spawn(querly_db, get_person_table, [undefined]),
+	Pid = spawn(querly_db, get_table, [undefined]),
 	DefaultRecord = #person{},
 	RecordFieldNames = record_info(fields, person),
-	Pid ! {self(), get_person_table, #person.idno, DefaultRecord, RecordFieldNames},
+	Pid ! {self(), get_table, #person.idno, DefaultRecord, RecordFieldNames},
 	receive
-		{people_table, PeopleTable} ->
+		{table_results, PeopleTable} ->
 			People = PeopleTable;
 		_ -> 
 			People = ets:new(people, [{keypos, #person.idno}])
