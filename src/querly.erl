@@ -9,14 +9,14 @@ start() ->
 	querly_db:start(),
 	case whereis(querly_db) of
 		undefined -> 
-			register(querly_db, spawn(querly_db, get_table, [undefined]));
+			register(querly_db, spawn(querly_db, tables_service, [undefined]));
 		_ -> 
 			querly_db_already_running
 	end.		
 
 start(TestTable) ->	
 	querly_db:start(),
-	register(querly_db, spawn(querly_db, get_table, [TestTable])).
+	register(querly_db, spawn(querly_db, tables_service, [TestTable])).
 
 select(SearchCriteria, DefaultRecord, RecordFieldNames, PrimaryKeyPosition) ->
 	querly_db ! {self(), get_table, PrimaryKeyPosition, DefaultRecord, RecordFieldNames},

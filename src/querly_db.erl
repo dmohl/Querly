@@ -2,7 +2,7 @@
 -author('Dan Mohl').
 
 -export([start/0, build_json/2, build_record/3, doc_create/3, doc_create/4, db_info/1, db_create/1, doc_get_all/1, doc_get/2,
-		get_table/1]).
+		tables_service/1]).
 
 -include_lib("record_definitions.hrl").
 
@@ -20,7 +20,7 @@ build_json(RecordToTransform, RecordFieldNames) ->
 build_record(Json, DefaultRecord, RecordFieldNames) ->
     rfc4627:to_record(Json, DefaultRecord, RecordFieldNames).
 
-get_table(Table) ->
+tables_service(Table) ->
 	receive
 		{From, get_table, PrimaryKeyPosition, DefaultRecord, RecordFieldNames} ->
 			case Table of
@@ -28,10 +28,10 @@ get_table(Table) ->
 					NewTable = ets:new(table, [{keypos, PrimaryKeyPosition}]),
 					build_table_from_couch(NewTable, DefaultRecord, RecordFieldNames),
 					From ! {table_results, NewTable},
-					get_table(NewTable);
+					tables_service(NewTable);
 				_ -> 
 					From ! {table_results, Table},
-					get_table(Table)
+					tables_service(Table)
 			end
 	end.
     
