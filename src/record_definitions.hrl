@@ -1,0 +1,1 @@
+-record(person, {idno, firstName, lastName, dob, ssn}). 
