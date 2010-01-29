@@ -2,7 +2,7 @@
 -author('Dan Mohl').
 
 -export([start/0, build_json/2, build_record/3, doc_create/3, doc_create/4, doc_get_all/1, doc_get/2,
-		tables_service/1, get_database_names/0, db_exists/1]).
+		tables_service/1, get_database_names/0, db_exists/1, get_table_by_name/2]).
 
 -include_lib("record_definitions.hrl").
 
@@ -17,35 +17,28 @@ build_json(RecordToTransform, RecordFieldNames) ->
 build_record(Json, DefaultRecord, RecordFieldNames) ->
     rfc4627:to_record(Json, DefaultRecord, RecordFieldNames).
 
-tables_service(Table) ->
+tables_service(TableList) ->
 	receive
 		{From, get_table, DatabaseName, PrimaryKeyPosition, DefaultRecord, RecordFieldNames} ->
-			case Table of
-				undefined -> 
-					NewTable = ets:new(table, [{keypos, PrimaryKeyPosition}]),
-					build_table_from_couch(DatabaseName, NewTable, DefaultRecord, RecordFieldNames),
-					From ! {table_results, NewTable},
-					tables_service(NewTable);
-				_ -> 
-					From ! {table_results, Table},
-					tables_service(Table)
-			end;
+			process_get_table_request(From, DatabaseName, TableList, PrimaryKeyPosition, DefaultRecord, RecordFieldNames);
 		{From, get_table, PrimaryKeyPosition, DefaultRecord, RecordFieldNames} ->
-			case Table of
-				undefined -> 
-					NewTable = ets:new(table, [{keypos, PrimaryKeyPosition}]),
-					build_table_from_couch(NewTable, DefaultRecord, RecordFieldNames),
-					From ! {table_results, NewTable},
-					tables_service(NewTable);
-				_ -> 
-					From ! {table_results, Table},
-					tables_service(Table)
-			end
+			Name = atom_to_list(element(1, DefaultRecord)),
+			process_get_table_request(From, Name, TableList, PrimaryKeyPosition, DefaultRecord, RecordFieldNames)
 	end.
 
-build_table_from_couch(Table, DefaultRecord, RecordFieldNames) ->
-	DatabaseName = element(1, DefaultRecord),
-	build_table_from_couch(DatabaseName, Table, DefaultRecord, RecordFieldNames).
+process_get_table_request(From, TableName, TableList, PrimaryKeyPosition, DefaultRecord, RecordFieldNames) ->
+	case get_table_by_name(TableName, TableList) of
+		undefined -> 
+			Table = ets:new(table, [{keypos, PrimaryKeyPosition}]),
+			build_table_from_couch(TableName, Table, DefaultRecord, RecordFieldNames),
+			NewTableList = lists:append([{TableName, Table}], TableList),
+			From ! {table_results, Table},
+			tables_service(NewTableList);
+		Table -> 
+			From ! {table_results, Table},
+			tables_service(TableList)
+	end.
+    
 build_table_from_couch(DatabaseName, Table, DefaultRecord, RecordFieldNames) ->
 	db_create_if_needed(DatabaseName),
 	Docs = doc_get_all(DatabaseName),
@@ -81,3 +74,10 @@ doc_get(DatabaseName, DocName) ->
 	
 get_database_names() ->
 	element(2, ecouch:db_list()).
+
+get_table_by_name(Name, TableList) ->
+    TableResult = lists:filter(fun(TableTuple) -> element(1, TableTuple) == Name end, TableList),
+	case TableResult of
+	    [] -> undefined;
+		_ -> element(2, lists:nth(1, TableResult))
+	end.	

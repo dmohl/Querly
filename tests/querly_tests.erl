@@ -19,7 +19,7 @@ initialize_test_suite() ->
 		#person{idno=99999997, firstName="Jimmy", lastName="John", dob="08/28/1967", ssn="123-45-5555"},
 		#person{idno=99999998, firstName="Jimmy", lastName="Smith", dob="08/28/1957", ssn="123-45-4444"},
 		#person{idno=99999999, firstName="Sally", lastName="Smith", dob="08/28/1947", ssn="123-45-3333"}]),	
-    querly:start(NewPeopleTable),	
+    querly:start([{"person", NewPeopleTable}]),	
 	delete_test_db(),
 	ecouch:db_create(get_test_db_name()).
 
