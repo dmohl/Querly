@@ -64,6 +64,7 @@ doc_create(DocName, RecordToTransform, RecordFieldNames) ->
 	doc_create(DatabaseName, DocName, RecordToTransform, RecordFieldNames).
 doc_create(DatabaseName, DocName, RecordToTransform, RecordFieldNames) ->
 	Json = querly_db:build_json(RecordToTransform, RecordFieldNames),
+	db_create_if_needed(DatabaseName),
     ecouch:doc_create(DatabaseName, DocName, Json).	
     
 doc_get_all(DatabaseName) ->    

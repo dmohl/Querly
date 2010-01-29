@@ -2,8 +2,9 @@
 -author('Dan Mohl').
 
 -export([run_all/0, test_build_record/0, test_build_json/0, test_create_person_doc/0,
-		test_get_all_docs/0, test_should_load_table_records/0, test_get_database_names/0, test_db_should_exist/0, 
-		test_get_table_by_name_with_table_found/0, test_get_table_by_name_with_table_not_found/0]).
+		test_get_all_docs/0, test_should_load_person_records/0, test_get_database_names/0, test_db_should_exist/0, 
+		test_get_table_by_name_with_table_found/0, test_get_table_by_name_with_table_not_found/0,
+		test_should_load_employer_records/0]).
 		 
 -include_lib("../src/record_definitions.hrl").
 
@@ -34,7 +35,8 @@ run_all() ->
 	test_db_should_exist(),
 	test_get_table_by_name_with_table_found(),
 	test_get_table_by_name_with_table_not_found(),
-	test_should_load_table_records(),
+	test_should_load_person_records(),
+	test_should_load_employer_records(),
 	% cleanup
 	finalize_test_suite(),
 	io:format("~nquerly_db_tests - Tests complete.~n~n").
@@ -94,9 +96,10 @@ test_db_should_exist() ->
 
 test_get_table_by_name_with_table_found() ->
 	PersonTable = ets:new(table, [{keypos, 1}]),
-	TableList = [{"person", PersonTable}, {"person2", PersonTable}],
-	Result = querly_db:get_table_by_name("person2", TableList), 
-   	test_helper:display_message({"test_get_table_by_name_with_table_found", Result == PersonTable, Result}).
+	CustomerTable = ets:new(table, [{keypos, 1}]),
+	TableList = [{"person", PersonTable}, {"customer", CustomerTable}],
+	Result = querly_db:get_table_by_name("customer", TableList), 
+   	test_helper:display_message({"test_get_table_by_name_with_table_found", Result == CustomerTable, Result}).
     	
 test_get_table_by_name_with_table_not_found() ->
 	PersonTable = ets:new(table, [{keypos, 1}]),
@@ -104,14 +107,14 @@ test_get_table_by_name_with_table_not_found() ->
 	Result = querly_db:get_table_by_name("person3", TableList), 
    	test_helper:display_message({"test_get_table_by_name_with_table_not_found", Result  == undefined, Result}).
 
-test_should_load_table_records() ->
-	PersonRecord1 = #person{idno=99999995, firstName="Dan", lastName="Mohl", dob="08/28/1977", ssn="123-45-9876"},
-	PersonRecord2 = #person{idno=99999996, firstName="Dan2", lastName="Mohl", dob="08/28/1977", ssn="123-45-9876"},
-	PersonRecord3 = #person{idno=99999997, firstName="Dan3", lastName="Mohl", dob="08/28/1977", ssn="123-45-9876"},
+test_should_load_person_records() ->
+	PersonRecord1 = #person{idno=1, firstName="Dan", lastName="Mohl", dob="08/28/1977", ssn="123-45-9876"},
+	PersonRecord2 = #person{idno=2, firstName="Dan2", lastName="Mohl", dob="08/28/1977", ssn="123-45-9876"},
+	PersonRecord3 = #person{idno=3, firstName="Dan3", lastName="Mohl", dob="08/28/1977", ssn="123-45-9876"},
 	RecordFieldNames = record_info(fields, person),
-	querly_db:doc_create("99999995", PersonRecord1, RecordFieldNames),
-	querly_db:doc_create("99999996", PersonRecord2, RecordFieldNames),
-	querly_db:doc_create("99999997", PersonRecord3, RecordFieldNames),
+	querly_db:doc_create("1", PersonRecord1, RecordFieldNames),
+	querly_db:doc_create("2", PersonRecord2, RecordFieldNames),
+	querly_db:doc_create("3", PersonRecord3, RecordFieldNames),
 	Pid = spawn(querly_db, tables_service, [[]]),
 	DefaultRecord = #person{},
 	RecordFieldNames = record_info(fields, person),
@@ -124,5 +127,26 @@ test_should_load_table_records() ->
 			People = ets:new(table, [{keypos, #person.idno}])
 	end,
 	Result = ets:select(People, [{#person{_ = '_'}, [], ['$_']}]),
-	test_helper:display_message({"test_should_load_table_records", erlang:length(Result) == 3, Result}),
+	test_helper:display_message({"test_should_load_person_records", erlang:length(Result) == 3, erlang:length(Result)}),
 	ecouch:db_delete("person").
+
+test_should_load_employer_records() ->
+	Record1 = #employer{id=1, name="ABC Corp.", address="123 South, Nashville, IN, 98766"},
+	Record2 = #employer{id=2, name="123 Inc.", address="321 Main, Nsh, TN 30727"},
+	RecordFieldNames = record_info(fields, employer),
+	querly_db:doc_create("1", Record1, RecordFieldNames),
+	querly_db:doc_create("2", Record2, RecordFieldNames),
+	Pid = spawn(querly_db, tables_service, [[]]),
+	DefaultRecord = #employer{},
+	RecordFieldNames = record_info(fields, employer),
+	Pid ! {self(), get_table, #employer.id, DefaultRecord, RecordFieldNames},
+	receive
+		{table_results, Table} ->
+			Employer = Table;
+		_Received -> 
+			io:format("~p", _Received),
+			Employer = ets:new(table, [{keypos, #employer.id}])
+	end,
+	Result = ets:select(Employer, [{#employer{_ = '_'}, [], ['$_']}]),
+	test_helper:display_message({"test_should_load_employer_records", erlang:length(Result) == 2, erlang:length(Result)}),
+	ecouch:db_delete("employer").
