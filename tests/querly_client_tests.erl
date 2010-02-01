@@ -1,7 +1,10 @@
 -module(querly_client_tests).
 -author('Dan Mohl').
 
--export([run_all/0, test_get_record_metadata/0, test_parse_where_clause/0]).
+-export([run_all/0, test_get_record_metadata/0, test_select/0, test_is_valid_record_true/0, test_is_valid_record_false/0,
+		 test_parse_select_all/0, test_parse_select_partial/0, test_parse_from/0,
+		 test_parse_with_with_where_clause/0, test_parse_with_with_no_where_clause/0,
+		 test_parse_from_with_no_where/0]).
 		 
 -include_lib("../src/record_definitions.hrl").
 
@@ -27,7 +30,15 @@ run_all() ->
 	initialize_test_suite(),
 	% all tests
 	test_get_record_metadata(),
-	test_parse_where_clause(),
+	test_select(),
+	test_is_valid_record_true(),
+	test_is_valid_record_false(),
+	test_parse_select_all(),
+	test_parse_select_partial(),
+	test_parse_from(),
+	test_parse_with_with_where_clause(),
+	test_parse_with_with_no_where_clause(),
+	test_parse_from_with_no_where(),
 	% finalize 
 	finalize_test_suite().		
 	
@@ -36,11 +47,46 @@ test_get_record_metadata() ->
 	Result = erlang:length(?recordMetadata),
     test_helper:display_message({"querly_client_tests/test_get_list_of_tables_and_fields", Result == 2, Result}).
 	
-test_parse_where_clause() ->
-    %querly_client:parse_where_
-	%DefaultRecord = #person{},
-	%RecordFieldNames = record_info(fields, person),
-	%ResultSet = querly:select(#person{_ = '_'}, DefaultRecord, RecordFieldNames, #person.idno),
-	%Result = erlang:length(ResultSet),
-	Result = 0,
-	test_helper:display_message({"querly_client_tests/test_parse_where_clause", Result == 1, Result}).
+test_is_valid_record_true() ->
+    Result = querly_client:is_valid_record("person"),
+    test_helper:display_message({"querly_client_tests/test_is_valid_record_true", Result == true, Result}).
+		
+test_is_valid_record_false() ->
+    Result = querly_client:is_valid_record("person2"),
+    test_helper:display_message({"querly_client_tests/test_is_valid_record_false", Result == false, Result}).
+	
+test_select() ->
+	Result = querly_client:select("person", [{"firstName", "Dan"}, {"lastName", "Mohl"}]),
+	test_helper:display_message({"querly_client_tests/test_select", erlang:length(Result) == 1, erlang:length(Result)}).
+	
+test_parse_select_all() ->
+	ResultList = querly_client:parse_sql("select * from person where firstName = \"Jimmy\""),
+	Result = element(2, lists:nth(1, ResultList)),
+	test_helper:display_message({"querly_client_tests/test_parse_select_all", Result == "*", Result}).
+
+test_parse_select_partial() ->
+	ResultList = querly_client:parse_sql("select firstName, lastName from person where firstName = \"Jimmy\""),
+	Result = element(2, lists:nth(1, ResultList)),
+	test_helper:display_message({"querly_client_tests/test_parse_select_partial", Result == "firstName, lastName", 
+	    Result}).
+
+test_parse_from() ->
+	ResultList = querly_client:parse_sql("select * from person where firstName = \"Jimmy\""),
+	Result = element(2, lists:nth(2, ResultList)),
+	test_helper:display_message({"querly_client_tests/test_parse_from", Result == "person", Result}).
+
+test_parse_from_with_no_where() ->
+	ResultList = querly_client:parse_sql("select * from person"),
+	Result = element(2, lists:nth(2, ResultList)),
+	test_helper:display_message({"querly_client_tests/test_parse_from_with_no_where", Result == "person", Result}).
+
+test_parse_with_with_where_clause() ->
+	ResultList = querly_client:parse_sql("select * from person where firstName = \"Jimmy\""),
+	Result = element(2, lists:nth(3, ResultList)),
+	test_helper:display_message({"querly_client_tests/test_parse_with_with_where_clause", 
+	    Result == "firstName = \"Jimmy\"", Result}).
+
+test_parse_with_with_no_where_clause() ->
+	ResultList = querly_client:parse_sql("select * from person"),
+	Result = element(2, lists:nth(3, ResultList)),
+	test_helper:display_message({"querly_client_tests/test_parse_with_with_no_where_clause", Result == "", Result}).
