@@ -2,8 +2,8 @@
 -author('Dan Mohl').
 
 -export([run_all/0, test_build_record/0, test_build_json/0, test_create_person_doc/0,
-		test_get_all_docs/0, test_should_load_person_records/0, test_get_database_names/0, test_db_should_exist/0, 
-		test_get_table_by_name_with_table_found/0, test_get_table_by_name_with_table_not_found/0,
+		test_get_all_docs/0, test_should_return_expected_person_record/0, test_should_load_person_records/0, test_get_database_names/0, 
+		test_db_should_exist/0, test_get_table_by_name_with_table_found/0, test_get_table_by_name_with_table_not_found/0,
 		test_should_load_employer_records/0]).
 		 
 -include_lib("../src/record_definitions.hrl").
@@ -22,24 +22,30 @@ initialize_test_suite() ->
 finalize_test_suite() ->
     delete_test_db().
 
+setup_tests() ->
+    [test_build_json,
+	 test_build_record,
+	 test_create_person_doc,
+	 test_get_all_docs,
+	 test_should_return_expected_person_record,
+	 test_get_database_names,
+	 test_db_should_exist,
+	 test_get_table_by_name_with_table_found,
+	 test_get_table_by_name_with_table_not_found,
+	 test_should_load_person_records,
+	 test_should_load_employer_records].
+
+run_tests() ->
+    Tests = setup_tests(),
+	lists:foreach(fun(Test) -> spawn(querly_db_tests, Test, []) end, Tests).
+
 run_all() ->
 	% initialize tests
 	initialize_test_suite(),
 	% all tests
-	test_build_json(),
-	test_build_record(),
-	test_create_person_doc(),
-	test_get_all_docs(),
-	test_should_return_expected_person_record(),
-	test_get_database_names(),
-	test_db_should_exist(),
-	test_get_table_by_name_with_table_found(),
-	test_get_table_by_name_with_table_not_found(),
-	test_should_load_person_records(),
-	test_should_load_employer_records(),
+	run_tests(),
 	% cleanup
-	finalize_test_suite(),
-	io:format("~nquerly_db_tests - Tests complete.~n~n").
+	finalize_test_suite().
 	
 test_build_json() ->
 	Json = {obj, [{"idno", 1}, {"firstName", "Dan"}, {"lastName", "Mohl"}, {"dob", "08/28/1977"}, {"ssn", "123-45-9876"}]},
@@ -72,8 +78,8 @@ test_get_all_docs() ->
 test_should_return_expected_person_record() ->	
 	PersonRecord = #person{idno=99999999, firstName="Dan", lastName="Mohl", dob="08/28/1977", ssn="123-45-9876"},
 	RecordFieldNames = record_info(fields, person),
-	querly_db:doc_create(get_test_db_name(), "3", PersonRecord, RecordFieldNames),
-	ResultJson = element(2, querly_db:doc_get(get_test_db_name(), "4")),
+	querly_db:doc_create(get_test_db_name(), "999", PersonRecord, RecordFieldNames),
+	ResultJson = element(2, querly_db:doc_get(get_test_db_name(), "999")),
 	Result = querly_db:build_record(ResultJson, PersonRecord, RecordFieldNames),
 	test_helper:display_message({"test_should_return_expected_person_record", Result == PersonRecord, Result}).
 	

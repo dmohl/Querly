@@ -26,17 +26,23 @@ initialize_test_suite() ->
 finalize_test_suite() ->
     delete_test_db().
 
+setup_tests() ->
+    [test_select_all,
+	 test_select_all_jimmy,
+	 test_select_all_smith,
+	 test_select_jimmy_smith].
+
+run_tests() ->
+    Tests = setup_tests(),
+	lists:foreach(fun(Test) -> spawn(querly_tests, Test, []) end, Tests).
+
 run_all() ->
 	% initialize tests
 	initialize_test_suite(),
 	% all tests
-	test_select_all(),
-	test_select_all_jimmy(),
-	test_select_all_smith(),
-	test_select_jimmy_smith(),
+	run_tests(),
 	% cleanup
-	finalize_test_suite(),
-	io:format("~nquerly_tests - Tests complete.~n~n").
+	finalize_test_suite().
 	
 test_select_all() ->
 	DefaultRecord = #person{},
