@@ -1,22 +1,38 @@
 -module(querly_client).
 -author('Dan Mohl').
 
--export([select/2, is_valid_record/1, parse_where_clause/3, get_record_fields/1, parse_sql/1]).
+-export([select/1, select/2, is_valid_record/1, parse_where_clause/3, get_record_fields/1, parse_sql/1]).
 
 -include_lib("record_definitions.hrl").
 
-select(RecordName, Where) ->
+select(Sql) ->
+	SqlParsed = parse_sql(Sql),
+	FromRecordName = get_parsed_sql_values(from, SqlParsed),
+	WhereSql = get_parsed_sql_values(where, SqlParsed),
+	case re:split(WhereSql, " and ", [{return, list}, trim]) of 
+		[] -> 	
+			WhereElements = [];
+		WhereTokens -> 
+			WhereElements = lists:map(fun(Element) -> 
+											    SplitResult = re:split(Element, "=", [{return, list}, trim]),
+												{string:strip(lists:nth(1, SplitResult)), 
+												 string:strip(lists:nth(2, SplitResult))}
+											end, WhereTokens)
+	end,
+	select(FromRecordName, WhereElements).		
+	
+select(RecordName, WhereElements) ->
 	case is_valid_record(RecordName) of
 		true -> 
 			RecordFieldNames = get_record_fields(RecordName),
-			Criteria = parse_where_clause(RecordName, Where, RecordFieldNames),
+			Criteria = parse_where_clause(RecordName, WhereElements, RecordFieldNames),
 			DefaultRecord = transform_to_record("", list_to_atom(RecordName), '_', RecordFieldNames),
 			PrimaryKeyIndex = 2,
 			querly:select(Criteria, DefaultRecord, RecordFieldNames, PrimaryKeyIndex);
 		false ->	
 			[]
-	end.		
-
+	end.
+	
 parse_sql(Sql) ->
 	SelectList = parse_sql_select(Sql),
 	SelectSyntax = lists:nth(1, SelectList),
@@ -38,7 +54,6 @@ parse_sql_from(Sql) ->
 	FromStartPosition = string:len("from "),
 	case (WhereStartPosition) of
 		0 ->
-			ElementsToSelect = string:len(Sql) - FromStartPosition,	 
 			FromSyntax = string:strip(string:substr(Sql, FromStartPosition)),
 			Rest = [];
 		_ -> 
@@ -61,6 +76,13 @@ parse_sql_where(Sql) ->
 parse_where_clause(RecordName, Where, RecordFieldNames) ->
 	transform_to_record(Where, list_to_atom(RecordName), '_', RecordFieldNames).
 	
+get_parsed_sql_values(Clause, ClauseList) ->
+    Result = lists:filter(fun(ClauseTuple) -> element(1, ClauseTuple) == Clause end, ClauseList),
+	case Result of
+	    [] -> "";
+		_ -> element(2, lists:nth(1,Result))
+	end.
+
 is_valid_record(RecordName) ->
     Result = lists:filter(fun(RecordTuple) -> atom_to_list(element(1, RecordTuple)) == RecordName end, ?recordMetadata),
 	case Result of
@@ -87,3 +109,6 @@ decode_record_fields(Values, DefaultValue, Index, [Field | Rest]) ->
 	 false ->
 	     DefaultValue
      end | decode_record_fields(Values, DefaultValue, Index + 1, Rest)].
+	 
+
+%querly_client:select("select * from person where firstName=\"Dan\" and lastName=\"Mohl\"").
