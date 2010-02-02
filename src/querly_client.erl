@@ -1,11 +1,11 @@
 -module(querly_client).
 -author('Dan Mohl').
 
--export([select/1, select/2, is_valid_record/1, parse_where_clause/3, get_record_fields/1, parse_sql/1]).
+-export([sql_query/1, select/2, is_valid_record/1, parse_where_clause/3, get_record_fields/1, parse_sql/1]).
 
 -include_lib("record_definitions.hrl").
 
-select(Sql) ->
+sql_query(Sql) ->
 	SqlParsed = parse_sql(Sql),
 	FromRecordName = get_parsed_sql_values(from, SqlParsed),
 	WhereSql = get_parsed_sql_values(where, SqlParsed),

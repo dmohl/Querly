@@ -4,8 +4,8 @@
 -export([run_all/0, test_get_record_metadata/0, test_select/0, test_is_valid_record_true/0, test_is_valid_record_false/0,
 		 test_parse_select_all/0, test_parse_select_partial/0, test_parse_from/0,
 		 test_parse_with_with_where_clause/0, test_parse_with_with_no_where_clause/0,
-		 test_parse_from_with_no_where/0, test_select_with_sql/0, test_select_employer_with_sql/0,
-		 test_select_invalid_employer_with_sql/0]).
+		 test_parse_from_with_no_where/0, test_sql_query_with_sql/0, test_sql_query_employer_with_sql/0,
+		 test_sql_query_invalid_employer_with_sql/0]).
 		 
 -include_lib("../src/record_definitions.hrl").
 
@@ -40,9 +40,9 @@ run_all() ->
 	test_parse_with_with_where_clause(),
 	test_parse_with_with_no_where_clause(),
 	test_parse_from_with_no_where(),
-	test_select_with_sql(),
-	test_select_employer_with_sql(),
-	test_select_invalid_employer_with_sql(),
+	test_sql_query_with_sql(),
+	test_sql_query_employer_with_sql(),
+	test_sql_query_invalid_employer_with_sql(),
 	% finalize 
 	finalize_test_suite().		
 	
@@ -63,16 +63,16 @@ test_select() ->
 	Result = querly_client:select("person", [{"firstName", "Dan"}, {"lastName", "Mohl"}]),
 	test_helper:display_message({"querly_client_tests/test_select", erlang:length(Result) == 1, erlang:length(Result)}).
 	
-test_select_with_sql() ->
-	Result = querly_client:select("select * from person where firstName=Dan and lastName = Mohl"),
+test_sql_query_with_sql() ->
+	Result = querly_client:sql_query("select * from person where firstName=Dan and lastName = Mohl"),
 	test_helper:display_message({"querly_client_tests/test_select_with_sql", erlang:length(Result) == 1, erlang:length(Result)}).
 
-test_select_employer_with_sql() ->
-	Result = querly_client:select("select * from employer where name=ABC Corp."),
+test_sql_query_employer_with_sql() ->
+	Result = querly_client:sql_query("select * from employer where name=ABC Corp."),
 	test_helper:display_message({"querly_client_tests/test_select_employer_with_sql", erlang:length(Result) == 1, erlang:length(Result)}).
 
-test_select_invalid_employer_with_sql() ->
-	Result = querly_client:select("select * from employer where name=ABC C orp."),
+test_sql_query_invalid_employer_with_sql() ->
+	Result = querly_client:sql_query("select * from employer where name=ABC C orp."),
 	test_helper:display_message({"querly_client_tests/test_select_invalid_employer_with_sql", erlang:length(Result) == 0, erlang:length(Result)}).
 
 test_parse_select_all() ->
