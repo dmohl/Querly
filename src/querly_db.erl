@@ -17,37 +17,45 @@ build_json(RecordToTransform, RecordFieldNames) ->
 build_record(Json, DefaultRecord, RecordFieldNames) ->
     rfc4627:to_record(Json, DefaultRecord, RecordFieldNames).
 
-tables_service(TableList) ->
+tables_service(DatabaseInformationTuple) ->
 	receive
 		{From, get_table, DatabaseName, PrimaryKeyPosition, DefaultRecord, RecordFieldNames} ->
-			process_get_table_request(From, DatabaseName, TableList, PrimaryKeyPosition, DefaultRecord, RecordFieldNames);
+			process_get_table_request(From, DatabaseName, DatabaseInformationTuple, PrimaryKeyPosition, DefaultRecord, RecordFieldNames);
 		{From, get_table, PrimaryKeyPosition, DefaultRecord, RecordFieldNames} ->
 			Name = atom_to_list(element(1, DefaultRecord)),
-			process_get_table_request(From, Name, TableList, PrimaryKeyPosition, DefaultRecord, RecordFieldNames)
+			process_get_table_request(From,Name, DatabaseInformationTuple, PrimaryKeyPosition, DefaultRecord, RecordFieldNames)
 	end.
 
-process_get_table_request(From, TableName, TableList, PrimaryKeyPosition, DefaultRecord, RecordFieldNames) ->
-	case get_table_by_name(TableName, TableList) of
+process_get_table_request(From, TableName, DatabaseInformationTuple, PrimaryKeyPosition, DefaultRecord, RecordFieldNames) ->
+	TableList = element(2, DatabaseInformationTuple),
+	DatabaseNamingFormat = element(1, DatabaseInformationTuple),
+	FormattedDatabaseName = binary_to_list(list_to_binary(io_lib:format(DatabaseNamingFormat, [TableName]))),
+	case get_table_by_name(FormattedDatabaseName, TableList) of
 		undefined -> 
 			Table = ets:new(table, [{keypos, PrimaryKeyPosition}]),
-			build_table_from_couch(TableName, Table, DefaultRecord, RecordFieldNames),
-			NewTableList = lists:append([{TableName, Table}], TableList),
+			build_table_from_couch(FormattedDatabaseName, Table, DefaultRecord, RecordFieldNames),
+			NewTableList = lists:append([{FormattedDatabaseName, Table}], TableList),
 			From ! {table_results, Table},
-			tables_service(NewTableList);
+			tables_service({DatabaseNamingFormat, NewTableList});
 		Table -> 
 			From ! {table_results, Table},
-			tables_service(TableList)
+			tables_service({DatabaseNamingFormat, TableList})
 	end.
     
 build_table_from_couch(DatabaseName, Table, DefaultRecord, RecordFieldNames) ->
 	db_create_if_needed(DatabaseName),
 	Docs = doc_get_all(DatabaseName),
-	Rows = lists:nth(3, element(2, element(2, Docs))),
-	ResultList = element(2, Rows),	
-	lists:foreach(fun(RowJson) -> 
-		DocumentJson = element(2, lists:nth(4, element(2, RowJson))), 
-		Record = build_record(DocumentJson, DefaultRecord, RecordFieldNames),
-		ets:insert(Table, Record) end, ResultList),
+	case element(2, element(2, Docs)) of
+		[] ->
+			Table;
+		_ ->
+			Rows = lists:nth(3, element(2, element(2, Docs))),
+			ResultList = element(2, Rows),	
+			lists:foreach(fun(RowJson) -> 
+				DocumentJson = element(2, lists:nth(4, element(2, RowJson))), 
+				Record = build_record(DocumentJson, DefaultRecord, RecordFieldNames),
+				ets:insert(Table, Record) end, ResultList)
+	end,			
 	Table.
 
 db_create_if_needed(DatabaseName) ->

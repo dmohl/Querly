@@ -6,12 +6,6 @@
 		 
 -include_lib("../src/record_definitions.hrl").
 
-get_test_db_name() ->
-	"test_person_db".
-	
-delete_test_db() ->
-    ecouch:db_delete(get_test_db_name()).
-
 initialize_test_suite() ->
 	NewPeopleTable = ets:new(people, [{keypos, #person.idno}]),
 	ets:insert(NewPeopleTable, 
@@ -24,13 +18,10 @@ initialize_test_suite() ->
 	   [#employer{id=999996, name="ABC Corp.", address="789 Main"},
 		#employer{id=999997, name="123 Inc.", address="456 Main"},
 		#employer{id=999998, name="XYZ Corp.", address="123 Main"}]),	
-    querly:start([{"person", NewPeopleTable}, {"employer", NewEmployerTable}]),
-	delete_test_db(),
-	ecouch:db_create(get_test_db_name()).
+    querly:start("~s", [{"person", NewPeopleTable}, {"employer", NewEmployerTable}]).
 
 finalize_test_suite() ->
-	querly:stop(),
-    delete_test_db().
+	querly:stop().
 
 run_all() ->
 	% initialize tests

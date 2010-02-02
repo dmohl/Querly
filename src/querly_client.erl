@@ -26,8 +26,12 @@ select(RecordName, WhereElements) ->
 		true -> 
 			RecordFieldNames = get_record_fields(RecordName),
 			Criteria = parse_where_clause(RecordName, WhereElements, RecordFieldNames),
-			DefaultRecord = transform_to_record("", list_to_atom(RecordName), '_', RecordFieldNames),
+			DefaultRecord = transform_to_record([], list_to_atom(RecordName), '_', RecordFieldNames),
 			PrimaryKeyIndex = 2,
+			%io:format("Criteria: ~p~n", [Criteria]),
+			%io:format("DefaultRecord: ~p~n", [DefaultRecord]),
+			%io:format("RecordFieldNames: ~p~n", [RecordFieldNames]),
+			%io:format("PrimaryKeyIndex: ~p~n", [PrimaryKeyIndex]),
 			querly:select(Criteria, DefaultRecord, RecordFieldNames, PrimaryKeyIndex);
 		false ->	
 			[]
@@ -111,4 +115,4 @@ decode_record_fields(Values, DefaultValue, Index, [Field | Rest]) ->
      end | decode_record_fields(Values, DefaultValue, Index + 1, Rest)].
 	 
 
-%querly_client:select("select * from person where firstName=\"Dan\" and lastName=\"Mohl\"").
+%querly_client:select("select * from person where idno = 1").

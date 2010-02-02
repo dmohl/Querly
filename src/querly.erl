@@ -1,17 +1,19 @@
 -module(querly).
 -author('Dan Mohl').
 
--export([start/0, start/1, stop/0, select/4]).
+-export([start/0, start/1, start/2, stop/0, select/4]).
 
 -include_lib("record_definitions.hrl").
 
 start() ->
-    start([]).
-start(TableList) ->	
+    start("~s", []).
+start(DatabaseNamingFormat)	->
+    start(DatabaseNamingFormat, []).
+start(DatabaseNamingFormat, TableList) ->	
 	case whereis(querly_db) of
 		undefined ->
 			querly_db:start(),
-			register(querly_db, spawn(querly_db, tables_service, [TableList]));
+			register(querly_db, spawn(querly_db, tables_service, [{DatabaseNamingFormat, TableList}]));
 		_ -> 
 			querly_db_already_running
 	end.

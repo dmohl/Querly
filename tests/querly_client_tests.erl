@@ -12,16 +12,16 @@
 initialize_test_suite() ->
 	NewPeopleTable = ets:new(people, [{keypos, #person.idno}]),
 	ets:insert(NewPeopleTable, 
-	   [#person{idno=99999996, firstName="Dan", lastName="Mohl", dob="08/28/1977", ssn="123-45-9876"},
-		#person{idno=99999997, firstName="Jimmy", lastName="John", dob="08/28/1967", ssn="123-45-5555"},
-		#person{idno=99999998, firstName="Jimmy", lastName="Smith", dob="08/28/1957", ssn="123-45-4444"},
-		#person{idno=99999999, firstName="Sally", lastName="Smith", dob="08/28/1947", ssn="123-45-3333"}]),	
+	   [#person{idno=1, firstName="Dan", lastName="Mohl", dob="08/28/1977", ssn="123-45-9876"},
+		#person{idno=2, firstName="Jimmy", lastName="John", dob="08/28/1967", ssn="123-45-5555"},
+		#person{idno=3, firstName="Jimmy", lastName="Smith", dob="08/28/1957", ssn="123-45-4444"},
+		#person{idno=4, firstName="Sally", lastName="Smith", dob="08/28/1947", ssn="123-45-3333"}]),	
 	NewEmployerTable = ets:new(employer, [{keypos, #employer.id}]),
 	ets:insert(NewEmployerTable, 
 	   [#employer{id=999996, name="ABC Corp.", address="789 Main"},
 		#employer{id=999997, name="123 Inc.", address="456 Main"},
 		#employer{id=999998, name="XYZ Corp.", address="123 Main"}]),	
-    querly:start([{"person", NewPeopleTable}, {"employer", NewEmployerTable}]).
+    querly:start("~s", [{"person", NewPeopleTable}, {"employer", NewEmployerTable}]).
 
 finalize_test_suite() ->
 	querly:stop().
@@ -43,6 +43,7 @@ run_all() ->
 	test_sql_query_with_sql(),
 	test_sql_query_employer_with_sql(),
 	test_sql_query_invalid_employer_with_sql(),
+	test_sql_query_person_with_sql_by_id(),
 	% finalize 
 	finalize_test_suite().		
 	
@@ -69,7 +70,7 @@ test_sql_query_with_sql() ->
 
 test_sql_query_employer_with_sql() ->
 	Result = querly_client:sql_query("select * from employer where name=ABC Corp."),
-	test_helper:display_message({"querly_client_tests/test_select_employer_with_sql", erlang:length(Result) == 1, erlang:length(Result)}).
+	test_helper:display_message({"querly_client_tests/test_select_employer_with_sql", erlang:length(Result) == 1, Result}).
 
 test_sql_query_invalid_employer_with_sql() ->
 	Result = querly_client:sql_query("select * from employer where name=ABC C orp."),
@@ -106,3 +107,7 @@ test_parse_with_with_no_where_clause() ->
 	ResultList = querly_client:parse_sql("select * from person"),
 	Result = element(2, lists:nth(3, ResultList)),
 	test_helper:display_message({"querly_client_tests/test_parse_with_with_no_where_clause", Result == "", Result}).
+
+test_sql_query_person_with_sql_by_id() ->
+	Result = querly_client:sql_query("select * from person where idno=1"),
+	test_helper:display_message({"querly_client_tests/test_sql_query_person_with_sql_by_id", erlang:length(Result) == 1, Result}).
