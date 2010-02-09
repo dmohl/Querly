@@ -5,6 +5,28 @@
 
 -include_lib("record_definitions.hrl").
 
+cast_value(Value) ->
+	cast_value(integer, Value). % start with type of integer and cycle through others until we find a valid type match
+cast_value(Type, Value) ->
+	case Type of
+		integer -> 
+			case is_typeof_integer(Value) of
+				true -> 
+					list_to_integer(Value);
+				_ -> 
+					cast_value(atom, Value)
+			end;		
+		_ -> 
+			Value
+	end.	
+
+is_typeof_integer(Value) ->
+	Result = (catch list_to_integer(Value)),
+	case Result of 
+		_ when is_integer(Result) -> true;
+		_ -> false
+	end.
+	
 sql_query(Sql) ->
 	SqlParsed = parse_sql(Sql),
 	FromRecordName = get_parsed_sql_values(from, SqlParsed),
@@ -16,7 +38,7 @@ sql_query(Sql) ->
 			WhereElements = lists:map(fun(Element) -> 
 											    SplitResult = re:split(Element, "=", [{return, list}, trim]),
 												{string:strip(lists:nth(1, SplitResult)), 
-												 string:strip(lists:nth(2, SplitResult))}
+												 cast_value(string:strip(lists:nth(2, SplitResult)))}
 											end, WhereTokens)
 	end,
 	select(FromRecordName, WhereElements).		

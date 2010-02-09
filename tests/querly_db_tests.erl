@@ -9,7 +9,7 @@
 -include_lib("../src/record_definitions.hrl").
 
 get_test_db_name() ->
-	"test_person_db".
+	"test_general_person_db".
 	
 delete_test_db() ->
     ecouch:db_delete(get_test_db_name()).

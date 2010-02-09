@@ -2,7 +2,7 @@
 -author('Dan Mohl').
 
 -export([run_all/0, test_select_all/0, test_select_all_jimmy/0, test_select_all_smith/0, 
-        test_select_jimmy_smith/0]).
+        test_select_jimmy_smith/0, test_select_person_with_id_99999996/0]).
 		 
 -include_lib("../src/record_definitions.hrl").
 
@@ -31,6 +31,7 @@ run_all() ->
 	test_select_all_jimmy(),
 	test_select_all_smith(),
 	test_select_jimmy_smith(),
+	test_select_person_with_id_99999996(),
 	% cleanup
 	finalize_test_suite().
 	
@@ -57,3 +58,9 @@ test_select_jimmy_smith() ->
 	ResultSet = querly:select(#person{firstName="Jimmy", lastName="Smith",  _ = '_'}, DefaultRecord, ?personFields, #person.idno),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_select_jimmy_smith", Result == 1, Result}).
+
+test_select_person_with_id_99999996() ->
+	DefaultRecord = #person{},
+	ResultSet = querly:select(#person{idno=99999996,  _ = '_'}, DefaultRecord, ?personFields, #person.idno),
+	Result = erlang:length(ResultSet),
+    test_helper:display_message({"querly_tests/test_select_person_with_id_99999996", Result == 1, Result}).
