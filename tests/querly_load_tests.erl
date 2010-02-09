@@ -9,8 +9,8 @@ get_test_db_name_format() ->
 	"test_~s_db_load".
 
 initialize_test_suite() ->
-    %querly:start(get_test_db_name_format()).
-	querly:start().
+    querly:start(get_test_db_name_format()).
+	%querly:start().
 
 run_all() ->
 	% initialize tests
