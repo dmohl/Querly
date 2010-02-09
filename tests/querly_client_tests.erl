@@ -5,7 +5,7 @@
 		 test_parse_select_all/0, test_parse_select_partial/0, test_parse_from/0,
 		 test_parse_with_with_where_clause/0, test_parse_with_with_no_where_clause/0,
 		 test_parse_from_with_no_where/0, test_sql_query_with_sql/0, test_sql_query_employer_with_sql/0,
-		 test_sql_query_invalid_employer_with_sql/0]).
+		 test_sql_query_invalid_employer_with_sql/0, test_sql_query_with_sql_an_no_where_clause/0]).
 		 
 -include_lib("../src/record_definitions.hrl").
 
@@ -44,6 +44,7 @@ run_all() ->
 	test_sql_query_employer_with_sql(),
 	test_sql_query_invalid_employer_with_sql(),
 	test_sql_query_person_with_sql_by_id(),
+	test_sql_query_with_sql_an_no_where_clause(),
 	% finalize 
 	finalize_test_suite().		
 	
@@ -67,6 +68,10 @@ test_select() ->
 test_sql_query_with_sql() ->
 	Result = querly_client:sql_query("select * from person where firstName=Dan and lastName = Mohl"),
 	test_helper:display_message({"querly_client_tests/test_select_with_sql", erlang:length(Result) == 1, erlang:length(Result)}).
+
+test_sql_query_with_sql_an_no_where_clause() ->
+	Result = querly_client:sql_query("select * from person"),
+	test_helper:display_message({"querly_client_tests/test_select_with_sql", erlang:length(Result) == 4, erlang:length(Result)}).
 
 test_sql_query_employer_with_sql() ->
 	Result = querly_client:sql_query("select * from employer where name=ABC Corp."),

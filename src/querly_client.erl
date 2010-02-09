@@ -32,7 +32,7 @@ sql_query(Sql) ->
 	FromRecordName = get_parsed_sql_values(from, SqlParsed),
 	WhereSql = get_parsed_sql_values(where, SqlParsed),
 	case re:split(WhereSql, " and ", [{return, list}, trim]) of 
-		[] -> 	
+		[[]] -> 	
 			WhereElements = [];
 		WhereTokens -> 
 			WhereElements = lists:map(fun(Element) -> 
@@ -81,7 +81,7 @@ parse_sql_from(Sql) ->
 	case (WhereStartPosition) of
 		0 ->
 			FromSyntax = string:strip(string:substr(Sql, FromStartPosition)),
-			Rest = [];
+			Rest = "";
 		_ -> 
 			ElementsToSelect = WhereStartPosition - FromStartPosition,	 
 			FromSyntax = string:strip(string:substr(Sql, FromStartPosition, ElementsToSelect)),
@@ -90,11 +90,11 @@ parse_sql_from(Sql) ->
 	[{from, FromSyntax}, Rest].
 
 parse_sql_where(Sql) ->
-	WhereStartPosition = string:len("where "),
 	case (string:len(string:strip(Sql))) of
 		0 ->
-			WhereSyntax = [];
+			WhereSyntax = "";
 		_ -> 
+			WhereStartPosition = string:len("where "),
 			WhereSyntax = string:strip(string:substr(Sql, WhereStartPosition))
 	end,		
 	{where, WhereSyntax}.
@@ -110,7 +110,7 @@ get_parsed_sql_values(Clause, ClauseList) ->
 	end.
 
 is_valid_record(RecordName) ->
-    Result = lists:filter(fun(RecordTuple) -> atom_to_list(element(1, RecordTuple)) == RecordName end, ?recordMetadata),
+	Result = lists:filter(fun(RecordTuple) -> atom_to_list(element(1, RecordTuple)) == RecordName end, ?recordMetadata),
 	case Result of
 	    [] -> false;
 		_ -> true
