@@ -30,7 +30,7 @@ load_10000_employers() ->
 create_person(Index, Iterations) ->
 	FirstName = binary_to_list(list_to_binary(io_lib:format("TestFirst~p", [Index]))),
 	LastName = binary_to_list(list_to_binary(io_lib:format("TestLast~p", [Index]))),
-	PersonRecord = #person{idno=Index, firstName=FirstName, lastName=LastName, dob="08/28/1977", ssn="123-45-9876"},			
+	PersonRecord = #person{'Idno'=Index, 'FirstName'=FirstName, 'LastName'=LastName, 'Dob'="08/28/1977", 'Ssn'="123-45-9876"},			
 	RecordFieldNames = record_info(fields, person),
 	querly_db:doc_create(io_lib:format("~p", [Index]), PersonRecord, RecordFieldNames),
 	case (Index =< Iterations) of
@@ -43,7 +43,7 @@ create_person(Index, Iterations) ->
 create_employer(Index, Iterations) ->
 	EmployerName = binary_to_list(list_to_binary(io_lib:format("TestEmployer~p", [Index]))), 
 	Address = binary_to_list(list_to_binary(io_lib:format("~p Main Street", [Index]))), 
-	EmployerRecord = #employer{id=Index, name=EmployerName, address=Address},			
+	EmployerRecord = #employer{'Id'=Index, 'Name'=EmployerName, 'Address'=Address},			
 	RecordFieldNames = record_info(fields, employer),
 	querly_db:doc_create(io_lib:format("~p", [Index]), EmployerRecord, RecordFieldNames),
 	case (Index =< Iterations) of

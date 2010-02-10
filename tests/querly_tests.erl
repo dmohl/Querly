@@ -7,27 +7,27 @@
 -include_lib("../src/record_definitions.hrl").
 
 initialize_test_suite() ->
-	NewPeopleTable = ets:new(people, [{keypos, #person.idno}]),
+	NewPeopleTable = ets:new(people, [{keypos, #person.'Idno'}]),
 	ets:insert(NewPeopleTable, 
-	   [#person{idno=99999996, firstName="Dan", lastName="Mohl", dob="08/28/1977", ssn="123-45-9876"},
-		#person{idno=99999997, firstName="Jimmy", lastName="John", dob="08/28/1967", ssn="123-45-5555"},
-		#person{idno=99999998, firstName="Jimmy", lastName="Smith", dob="08/28/1957", ssn="123-45-4444"},
-		#person{idno=99999999, firstName="Sally", lastName="Smith", dob="08/28/1947", ssn="123-45-3333"}]),	
-	NewEmployerTable = ets:new(employer, [{keypos, #employer.id}]),
+	   [#person{'Idno'=99999996, 'FirstName'="Dan", 'LastName'="Mohl", 'Dob'="08/28/1977", 'Ssn'="123-45-9876"},
+		#person{'Idno'=99999997, 'FirstName'="Jimmy", 'LastName'="John", 'Dob'="08/28/1967", 'Ssn'="123-45-5555"},
+		#person{'Idno'=99999998, 'FirstName'="Jimmy", 'LastName'="Smith", 'Dob'="08/28/1957", 'Ssn'="123-45-4444"},
+		#person{'Idno'=99999999, 'FirstName'="Sally", 'LastName'="Smith", 'Dob'="08/28/1947", 'Ssn'="123-45-3333"}]),	
+	NewEmployerTable = ets:new(employer, [{keypos, #employer.'Id'}]),
 	ets:insert(NewEmployerTable, 
-	   [#employer{id=999996, name="ABC Corp.", address="789 Main"},
-		#employer{id=999997, name="123 Inc.", address="456 Main"},
-		#employer{id=999998, name="XYZ Corp.", address="123 Main"}]),	
+	   [#employer{'Id'=999996, 'Name'="ABC Corp.", 'Address'="789 Main"},
+		#employer{'Id'=999997, 'Name'="123 Inc.", 'Address'="456 Main"},
+		#employer{'Id'=999998, 'Name'="XYZ Corp.", 'Address'="123 Main"}]),	
     querly:start("~s", [{"person", NewPeopleTable}, {"employer", NewEmployerTable}]).
 
 initialize_test_suite_with_no_persons() ->
-	NewPeopleTable = ets:new(people, [{keypos, #person.idno}]),
+	NewPeopleTable = ets:new(people, [{keypos, #person.'Idno'}]),
 	ets:insert(NewPeopleTable, []),	
-	NewEmployerTable = ets:new(employer, [{keypos, #employer.id}]),
+	NewEmployerTable = ets:new(employer, [{keypos, #employer.'Id'}]),
 	ets:insert(NewEmployerTable, 
-	   [#employer{id=999996, name="ABC Corp.", address="789 Main"},
-		#employer{id=999997, name="123 Inc.", address="456 Main"},
-		#employer{id=999998, name="XYZ Corp.", address="123 Main"}]),	
+	   [#employer{'Id'=999996, 'Name'="ABC Corp.", 'Address'="789 Main"},
+		#employer{'Id'=999997, 'Name'="123 Inc.", 'Address'="456 Main"},
+		#employer{'Id'=999998, 'Name'="XYZ Corp.", 'Address'="123 Main"}]),	
     querly:start("~s", [{"person", NewPeopleTable}, {"employer", NewEmployerTable}]).
 
 finalize_test_suite() ->
@@ -48,31 +48,31 @@ run_all() ->
 	
 test_select_all() ->
 	DefaultRecord = #person{},
-	ResultSet = querly:select(#person{_ = '_'}, DefaultRecord, ?personFields, #person.idno),
+	ResultSet = querly:select(#person{_ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
 	Result = erlang:length(ResultSet),
 	test_helper:display_message({"querly_tests/test_select_all", Result == 4, Result}).
 	
 test_select_all_jimmy() ->
 	DefaultRecord = #person{},
-	ResultSet = querly:select(#person{firstName="Jimmy",  _ = '_'}, DefaultRecord, ?personFields, #person.idno),
+	ResultSet = querly:select(#person{'FirstName'="Jimmy",  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_select_all_jimmy", Result == 2, Result}).
 
 test_select_all_smith() ->
 	DefaultRecord = #person{},
-	ResultSet = querly:select(#person{lastName="Smith",  _ = '_'}, DefaultRecord, ?personFields, #person.idno),
+	ResultSet = querly:select(#person{'LastName'="Smith",  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_select_all_smith", Result == 2, Result}).
 
 test_select_jimmy_smith() ->
 	DefaultRecord = #person{},
-	ResultSet = querly:select(#person{firstName="Jimmy", lastName="Smith",  _ = '_'}, DefaultRecord, ?personFields, #person.idno),
+	ResultSet = querly:select(#person{'FirstName'="Jimmy", 'LastName'="Smith",  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_select_jimmy_smith", Result == 1, Result}).
 
 test_select_person_with_id_99999996() ->
 	DefaultRecord = #person{},
-	ResultSet = querly:select(#person{idno=99999996,  _ = '_'}, DefaultRecord, ?personFields, #person.idno),
+	ResultSet = querly:select(#person{'Idno'=99999996,  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_select_person_with_id_99999996", Result == 1, Result}).
 
@@ -81,7 +81,7 @@ test_reset_specified_ets_table() ->
 	querly:reset_ets_table("person"),
 	querly:stop(),
 	initialize_test_suite_with_no_persons(),
-	ResultSet = querly:select(#person{idno=99999996,  _ = '_'}, DefaultRecord, ?personFields, #person.idno),
+	ResultSet = querly:select(#person{'Idno'=99999996,  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
 	io:format("here"),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_reset_specified_ets_table", Result == 0, Result}),

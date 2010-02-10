@@ -14,7 +14,14 @@ cast_value(Type, Value) ->
 				true -> 
 					list_to_integer(Value);
 				_ -> 
-					cast_value(atom, Value)
+					cast_value(bitstring, Value)
+			end;		
+		bitstring ->
+			case is_typeof_bitstring(Value) of
+				true -> 
+					re:replace(Value, "\"", "", [{return, binary}, global]);
+				_ -> 
+					cast_value(other, Value)
 			end;		
 		_ -> 
 			Value
@@ -25,6 +32,21 @@ is_typeof_integer(Value) ->
 	case Result of 
 		_ when is_integer(Result) -> true;
 		_ -> false
+	end.
+
+is_typeof_bitstring(Value) ->
+	QuotePosition = string:str(Value, "\""),
+	case QuotePosition of
+		0 -> 
+			false;
+		_ ->  	
+			Result = (catch list_to_bitstring(Value)),
+			case Result of 
+				_ when is_bitstring(Result) -> 
+					true;
+				_ -> 
+					false
+			end
 	end.
 	
 sql_query(Sql) ->

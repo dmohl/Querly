@@ -1,10 +1,10 @@
--record(person, {idno, firstName, lastName, dob, ssn}). 
+-record(person, {'Idno', 'FirstName', 'LastName', 'Dob', 'Ssn'}). 
 -define(personFields, record_info(fields, person)).
 
--record(employer, {id, name, address}). 
+-record(employer, {'Id', 'Name', 'Address'}). 
 -define(employerFields, record_info(fields, employer)).
 
--record(paycheck, {id, checkNumber}). 
+-record(paycheck, {'Id', 'CheckNumber'}). 
 -define(paycheckFields, record_info(fields, paycheck)).
 
 -define(recordMetadata, 
