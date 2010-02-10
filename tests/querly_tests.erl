@@ -2,7 +2,7 @@
 -author('Dan Mohl').
 
 -export([run_all/0, test_select_all/0, test_select_all_jimmy/0, test_select_all_smith/0, 
-        test_select_jimmy_smith/0, test_select_person_with_id_99999996/0]).
+        test_select_jimmy_smith/0, test_select_person_with_id_99999996/0, test_reset_specified_ets_table/0]).
 		 
 -include_lib("../src/record_definitions.hrl").
 
@@ -13,6 +13,16 @@ initialize_test_suite() ->
 		#person{idno=99999997, firstName="Jimmy", lastName="John", dob="08/28/1967", ssn="123-45-5555"},
 		#person{idno=99999998, firstName="Jimmy", lastName="Smith", dob="08/28/1957", ssn="123-45-4444"},
 		#person{idno=99999999, firstName="Sally", lastName="Smith", dob="08/28/1947", ssn="123-45-3333"}]),	
+	NewEmployerTable = ets:new(employer, [{keypos, #employer.id}]),
+	ets:insert(NewEmployerTable, 
+	   [#employer{id=999996, name="ABC Corp.", address="789 Main"},
+		#employer{id=999997, name="123 Inc.", address="456 Main"},
+		#employer{id=999998, name="XYZ Corp.", address="123 Main"}]),	
+    querly:start("~s", [{"person", NewPeopleTable}, {"employer", NewEmployerTable}]).
+
+initialize_test_suite_with_no_persons() ->
+	NewPeopleTable = ets:new(people, [{keypos, #person.idno}]),
+	ets:insert(NewPeopleTable, []),	
 	NewEmployerTable = ets:new(employer, [{keypos, #employer.id}]),
 	ets:insert(NewEmployerTable, 
 	   [#employer{id=999996, name="ABC Corp.", address="789 Main"},
@@ -32,6 +42,7 @@ run_all() ->
 	test_select_all_smith(),
 	test_select_jimmy_smith(),
 	test_select_person_with_id_99999996(),
+	test_reset_specified_ets_table(),
 	% cleanup
 	finalize_test_suite().
 	
@@ -64,3 +75,15 @@ test_select_person_with_id_99999996() ->
 	ResultSet = querly:select(#person{idno=99999996,  _ = '_'}, DefaultRecord, ?personFields, #person.idno),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_select_person_with_id_99999996", Result == 1, Result}).
+
+test_reset_specified_ets_table() ->
+	DefaultRecord = #person{},
+	querly:reset_ets_table("person"),
+	querly:stop(),
+	initialize_test_suite_with_no_persons(),
+	ResultSet = querly:select(#person{idno=99999996,  _ = '_'}, DefaultRecord, ?personFields, #person.idno),
+	io:format("here"),
+	Result = erlang:length(ResultSet),
+    test_helper:display_message({"querly_tests/test_reset_specified_ets_table", Result == 0, Result}),
+	querly:stop(),
+	initialize_test_suite().

@@ -23,7 +23,23 @@ tables_service(DatabaseInformationTuple) ->
 			process_get_table_request(From, DatabaseName, DatabaseInformationTuple, PrimaryKeyPosition, DefaultRecord, RecordFieldNames);
 		{From, get_table, PrimaryKeyPosition, DefaultRecord, RecordFieldNames} ->
 			Name = atom_to_list(element(1, DefaultRecord)),
-			process_get_table_request(From,Name, DatabaseInformationTuple, PrimaryKeyPosition, DefaultRecord, RecordFieldNames)
+			process_get_table_request(From,Name, DatabaseInformationTuple, PrimaryKeyPosition, DefaultRecord, RecordFieldNames);
+		{From, reset_table, TableName} ->
+			remove_table_from_table_list(From, DatabaseInformationTuple, TableName)
+	end.
+
+remove_table_from_table_list(From, DatabaseInformationTuple, TableName) ->
+	TableList = element(2, DatabaseInformationTuple),
+	DatabaseNamingFormat = element(1, DatabaseInformationTuple),
+	FormattedDatabaseName = binary_to_list(list_to_binary(io_lib:format(DatabaseNamingFormat, [TableName]))),
+	case get_table_element_from_list(FormattedDatabaseName, TableList) of
+		[] ->
+			From ! {table_reset_results, TableList},
+			tables_service({DatabaseNamingFormat, TableList});
+		TableElement -> 
+			NewTableList = lists:delete(lists:nth(1, TableElement), TableList),
+			From ! {table_reset_results, NewTableList},
+			tables_service({DatabaseNamingFormat, NewTableList})
 	end.
 
 process_get_table_request(From, TableName, DatabaseInformationTuple, PrimaryKeyPosition, DefaultRecord, RecordFieldNames) ->
@@ -41,7 +57,7 @@ process_get_table_request(From, TableName, DatabaseInformationTuple, PrimaryKeyP
 			From ! {table_results, Table},
 			tables_service({DatabaseNamingFormat, TableList})
 	end.
-    
+
 build_table_from_couch(DatabaseName, Table, DefaultRecord, RecordFieldNames) ->
 	db_create_if_needed(DatabaseName),
 	Docs = doc_get_all(DatabaseName),
@@ -84,8 +100,11 @@ doc_get(DatabaseName, DocName) ->
 get_database_names() ->
 	element(2, ecouch:db_list()).
 
+get_table_element_from_list(Name, TableList) ->
+    lists:filter(fun(TableTuple) -> element(1, TableTuple) == Name end, TableList).
+	
 get_table_by_name(Name, TableList) ->
-    TableResult = lists:filter(fun(TableTuple) -> element(1, TableTuple) == Name end, TableList),
+    TableResult = get_table_element_from_list(Name, TableList),
 	case TableResult of
 	    [] -> undefined;
 		_ -> element(2, lists:nth(1, TableResult))

@@ -114,7 +114,7 @@ test_should_load_person_records() ->
 		{table_results, Table} ->
 			People = Table;
 		_Received -> 
-			io:format("~p", [_Received]),
+			io:format("~p~n~n", [_Received]),
 			People = ets:new(table, [{keypos, #person.idno}])
 	end,
 	Result = ets:select(People, [{#person{_ = '_'}, [], ['$_']}]),

@@ -1,7 +1,7 @@
 -module(querly_client_tests).
 -author('Dan Mohl').
 
--export([run_all/0, test_get_record_metadata/0, test_select/0, test_is_valid_record_true/0, test_is_valid_record_false/0,
+-export([run_all/0, test_select/0, test_is_valid_record_true/0, test_is_valid_record_false/0,
 		 test_parse_select_all/0, test_parse_select_partial/0, test_parse_from/0,
 		 test_parse_with_with_where_clause/0, test_parse_with_with_no_where_clause/0,
 		 test_parse_from_with_no_where/0, test_sql_query_with_sql/0, test_sql_query_employer_with_sql/0,
@@ -30,7 +30,6 @@ run_all() ->
 	% initialize tests
 	initialize_test_suite(),
 	% all tests
-	test_get_record_metadata(),
 	test_select(),
 	test_is_valid_record_true(),
 	test_is_valid_record_false(),
@@ -47,11 +46,6 @@ run_all() ->
 	test_sql_query_with_sql_an_no_where_clause(),
 	% finalize 
 	finalize_test_suite().		
-	
-
-test_get_record_metadata() ->
-	Result = erlang:length(?recordMetadata),
-    test_helper:display_message({"querly_client_tests/test_get_list_of_tables_and_fields", Result == 2, Result}).
 	
 test_is_valid_record_true() ->
     Result = querly_client:is_valid_record("person"),
