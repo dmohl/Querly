@@ -82,7 +82,6 @@ test_reset_specified_ets_table() ->
 	querly:stop(),
 	initialize_test_suite_with_no_persons(),
 	ResultSet = querly:select(#person{'Idno'=99999996,  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
-	io:format("here"),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_reset_specified_ets_table", Result == 0, Result}),
 	querly:stop(),

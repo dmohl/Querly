@@ -13,7 +13,7 @@ start(DatabaseNamingFormat, TableList) ->
 	case whereis(querly_db) of
 		undefined ->
 			querly_db:start(),
-			register(querly_db, spawn(querly_db, tables_service, [{DatabaseNamingFormat, TableList}]));
+			register(querly_db, spawn_link(querly_db, tables_service, [{DatabaseNamingFormat, TableList}]));
 		_ -> 
 			querly_db_already_running
 	end.

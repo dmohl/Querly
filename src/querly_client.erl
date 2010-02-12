@@ -157,6 +157,4 @@ decode_record_fields(Values, DefaultValue, Index, [Field | Rest]) ->
 	 false ->
 	     DefaultValue
      end | decode_record_fields(Values, DefaultValue, Index + 1, Rest)].
-	 
 
-%querly_client:select("select * from person where idno = 1").
