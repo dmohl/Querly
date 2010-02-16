@@ -11,3 +11,8 @@
     [{person, record_info(fields, person)},
 	{employer, record_info(fields, employer)},
 	{paycheck, record_info(fields, paycheck)}].
+
+-define(RABBITMQ_SUBSCRIPTION_TIMER, 600).
+-define(RABBITMQ_EXCHANGE, <<"querlydemo">>).
+-define(RABBITMQ_QUEUE, <<"querlydemo">>).
+-define(RABBITMQ_TYPE, <<"topic">>).

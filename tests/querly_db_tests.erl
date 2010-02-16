@@ -4,7 +4,7 @@
 -export([run_all/0, test_build_record/0, test_build_json/0, test_create_person_doc/0,
 		test_get_all_docs/0, test_should_return_expected_person_record/0, test_should_load_person_records/0, test_get_database_names/0, 
 		test_db_should_exist/0, test_get_table_by_name_with_table_found/0, test_get_table_by_name_with_table_not_found/0,
-		test_should_load_employer_records/0]).
+		test_should_load_employer_records/0, test_chop_nonprintable_characters/0]).
 		 
 -include_lib("../src/record_definitions.hrl").
 
@@ -36,6 +36,7 @@ run_all() ->
 	test_get_table_by_name_with_table_not_found(),
 	test_should_load_person_records(),
 	test_should_load_employer_records(),
+	test_chop_nonprintable_characters(),
 	% cleanup
 	finalize_test_suite().
 	
@@ -139,3 +140,8 @@ test_should_load_employer_records() ->
 	Result = ets:select(Employer, [{#employer{_ = '_'}, [], ['$_']}]),
 	test_helper:display_message({"querly_db_tests/test_should_load_employer_records", erlang:length(Result) == 2, erlang:length(Result)}),
 	ecouch:db_delete("test_employer_db").
+
+test_chop_nonprintable_characters() ->
+    Result = querly_db:chop_nonprintable_characters([0,1,200, 175, 100, 4, 100]),
+	test_helper:display_message({"querly_db_tests/test_chop_nonprintable_characters", Result == "dd", Result}).
+	

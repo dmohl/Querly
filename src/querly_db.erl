@@ -2,13 +2,23 @@
 -author('Dan Mohl').
 
 -export([start/0, build_json/2, build_record/3, doc_create/3, doc_create/4, doc_get_all/1, doc_get/2,
-		tables_service/1, get_database_names/0, db_exists/1, get_table_by_name/2]).
+		tables_service/1, get_database_names/0, db_exists/1, get_table_by_name/2, handle_ets_update/0,
+		chop_nonprintable_characters/1]).
 
 -include_lib("record_definitions.hrl").
 
 start() ->
 	inets:start(),
-	application:start(ecouch).
+	application:start(ecouch),
+	start_ets_updater().
+	
+start_ets_updater() ->
+	case whereis(ets_updater) of
+		undefined ->
+			register(ets_updater, spawn_link(fun() -> handle_ets_update() end));
+		EtsUpdaterPid ->
+			EtsUpdaterPid
+	end.		
 
 build_json(RecordToTransform, RecordFieldNames) ->
 	Record = element(1, RecordToTransform),
@@ -73,6 +83,49 @@ build_table_from_couch(DatabaseName, Table, DefaultRecord, RecordFieldNames) ->
 				ets:insert(Table, Record) end, ResultList)
 	end,			
 	Table.
+
+handle_ets_update() ->
+	SubscriberPid = get_rabbitmq_subscriber_pid(?RABBITMQ_EXCHANGE, ?RABBITMQ_QUEUE, ?RABBITMQ_TYPE),
+	SubscriberPid ! {self(), get_all_messages, ?RABBITMQ_QUEUE},
+	receive
+		{messages_received, MessageList} ->
+			process_messages(MessageList)
+	end,
+	timer:sleep(?RABBITMQ_SUBSCRIPTION_TIMER),
+	handle_ets_update().
+
+process_messages(MessageList) ->
+	lists:foreach(
+		fun(Message) -> 
+			{_QueueInformation, MessageContent} = Message,
+			{amqp_msg, _PayloadInformation, Payload} = MessageContent,
+			ChoppedMessagePayload = chop_nonprintable_characters(bitstring_to_list(Payload)),
+			io:format("PostChop - ~p~n", [ChoppedMessagePayload]) 
+		end, MessageList).	
+
+get_rabbitmq_subscriber_pid(Queue, Exchange, Type) ->
+	case whereis(rabbitmq_subscriber) of
+		undefined ->
+			querly_rabbitmq:setup_exchange(Queue, Exchange, Type),
+			SubscriberPid = querly_rabbitmq:start_subscriber(),
+			register(rabbitmq_subscriber, SubscriberPid),
+			SubscriberPid;
+		SubscriberPid ->
+			SubscriberPid
+	end.		
+
+chop_nonprintable_characters(CharacterList) ->
+    lists:filter(fun(Char) -> is_printable_character(Char) == true end, CharacterList).		
+
+is_printable_character(Character) ->
+	case Character of
+		%_ when Character >= 8, Character =< 14 -> 
+		%	true;
+		_ when Character >= 32, Character =< 127 -> 
+			true;
+		_ -> 
+			false
+	end.    
 
 db_create_if_needed(DatabaseName) ->
     case db_exists(DatabaseName) of
