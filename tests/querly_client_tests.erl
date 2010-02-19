@@ -1,8 +1,7 @@
 -module(querly_client_tests).
 -author('Dan Mohl').
 
--export([run_all/0, test_select/0, test_is_valid_record_true/0, test_is_valid_record_false/0,
-		 test_parse_select_all/0, test_parse_select_partial/0, test_parse_from/0,
+-export([run_all/0, test_select/0, test_parse_select_all/0, test_parse_select_partial/0, test_parse_from/0,
 		 test_parse_with_with_where_clause/0, test_parse_with_with_no_where_clause/0,
 		 test_parse_from_with_no_where/0, test_sql_query_with_sql/0, test_sql_query_employer_with_sql/0,
 		 test_sql_query_invalid_employer_with_sql/0, test_sql_query_with_sql_an_no_where_clause/0,
@@ -34,8 +33,6 @@ run_all() ->
 	initialize_test_suite(),
 	% all tests
 	test_select(),
-	test_is_valid_record_true(),
-	test_is_valid_record_false(),
 	test_parse_select_all(),
 	test_parse_select_partial(),
 	test_parse_from(),
@@ -50,14 +47,6 @@ run_all() ->
 	test_sql_against_bitstring_field(),
 	% finalize 
 	finalize_test_suite().		
-	
-test_is_valid_record_true() ->
-    Result = querly_client:is_valid_record("person"),
-    test_helper:display_message({"querly_client_tests/test_is_valid_record_true", Result == true, Result}).
-		
-test_is_valid_record_false() ->
-    Result = querly_client:is_valid_record("person2"),
-    test_helper:display_message({"querly_client_tests/test_is_valid_record_false", Result == false, Result}).
 	
 test_select() ->
 	Result = querly_client:select("person", [{"FirstName", "Dan"}, {"LastName", "Mohl"}]),

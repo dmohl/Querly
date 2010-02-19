@@ -109,8 +109,7 @@ test_should_load_person_records() ->
 	querly_db:doc_create("test_person_db", "2", PersonRecord2, ?personFields),
 	querly_db:doc_create("test_person_db", "3", PersonRecord3, ?personFields),
 	Pid = spawn(querly_db, tables_service, [{"test_~s_db", []}]),
-	DefaultRecord = #person{},
-	Pid ! {self(), get_table, #person.'Idno', DefaultRecord, ?personFields},
+	Pid ! {self(), get_table, person, #person.'Idno'},
 	receive
 		{table_results, Table} ->
 			People = Table;
@@ -128,8 +127,7 @@ test_should_load_employer_records() ->
 	querly_db:doc_create("test_employer_db", "1", Record1, ?employerFields),
 	querly_db:doc_create("test_employer_db", "2", Record2, ?employerFields),
 	Pid = spawn(querly_db, tables_service, [{"test_~s_db", []}]),
-	DefaultRecord = #employer{},
-	Pid ! {self(), get_table, #employer.'Id', DefaultRecord, ?employerFields},
+	Pid ! {self(), get_table, employer, #employer.'Id'},
 	receive
 		{table_results, Table} ->
 			Employer = Table;

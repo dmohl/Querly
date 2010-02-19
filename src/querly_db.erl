@@ -29,11 +29,8 @@ build_record(Json, DefaultRecord, RecordFieldNames) ->
 
 tables_service(DatabaseInformationTuple) ->
 	receive
-		{From, get_table, DatabaseName, PrimaryKeyPosition, DefaultRecord, RecordFieldNames} ->
-			process_get_table_request(From, DatabaseName, DatabaseInformationTuple, PrimaryKeyPosition, DefaultRecord, RecordFieldNames);
-		{From, get_table, PrimaryKeyPosition, DefaultRecord, RecordFieldNames} ->
-			Name = atom_to_list(element(1, DefaultRecord)),
-			process_get_table_request(From,Name, DatabaseInformationTuple, PrimaryKeyPosition, DefaultRecord, RecordFieldNames);
+		{From, get_table, DatabaseName, PrimaryKeyPosition} ->
+			process_get_table_request(From, DatabaseName, DatabaseInformationTuple, PrimaryKeyPosition);
 		{From, reset_table, TableName} ->
 			remove_table_from_table_list(From, DatabaseInformationTuple, TableName)
 	end.
@@ -52,14 +49,14 @@ remove_table_from_table_list(From, DatabaseInformationTuple, TableName) ->
 			tables_service({DatabaseNamingFormat, NewTableList})
 	end.
 
-process_get_table_request(From, TableName, DatabaseInformationTuple, PrimaryKeyPosition, DefaultRecord, RecordFieldNames) ->
+process_get_table_request(From, TableName, DatabaseInformationTuple, PrimaryKeyPosition) ->
 	TableList = element(2, DatabaseInformationTuple),
 	DatabaseNamingFormat = element(1, DatabaseInformationTuple),
 	FormattedDatabaseName = binary_to_list(list_to_binary(io_lib:format(DatabaseNamingFormat, [TableName]))),
 	case get_table_by_name(FormattedDatabaseName, TableList) of
 		undefined -> 
-			Table = ets:new(table, [{keypos, PrimaryKeyPosition}]),
-			build_table_from_couch(FormattedDatabaseName, Table, DefaultRecord, RecordFieldNames),
+			Table = ets:new(table, [public, {keypos, PrimaryKeyPosition}]),
+			build_table_from_couch(FormattedDatabaseName, Table, TableName),
 			NewTableList = lists:append([{FormattedDatabaseName, Table}], TableList),
 			From ! {table_results, Table},
 			tables_service({DatabaseNamingFormat, NewTableList});
@@ -68,7 +65,7 @@ process_get_table_request(From, TableName, DatabaseInformationTuple, PrimaryKeyP
 			tables_service({DatabaseNamingFormat, TableList})
 	end.
 
-build_table_from_couch(DatabaseName, Table, DefaultRecord, RecordFieldNames) ->
+build_table_from_couch(DatabaseName, Table, TableName) ->
 	db_create_if_needed(DatabaseName),
 	Docs = doc_get_all(DatabaseName),
 	case element(2, element(2, Docs)) of
@@ -77,12 +74,46 @@ build_table_from_couch(DatabaseName, Table, DefaultRecord, RecordFieldNames) ->
 		_ ->
 			Rows = lists:nth(3, element(2, element(2, Docs))),
 			ResultList = element(2, Rows),	
-			lists:foreach(fun(RowJson) -> 
-				DocumentJson = element(2, lists:nth(4, element(2, RowJson))), 
-				Record = build_record(DocumentJson, DefaultRecord, RecordFieldNames),
-				ets:insert(Table, Record) end, ResultList)
+			lists:foreach(
+				fun(RowJson) -> 
+					DocumentJson = element(2, lists:nth(4, element(2, RowJson))), 
+					add_json_to_ets_table(DocumentJson, Table, TableName) 
+				end, ResultList)
 	end,			
 	Table.
+
+add_json_to_ets_table(Json, TableName) ->
+	Table = case whereis(querly_db) of
+		undefined -> 
+			io:format("Something went wrong in add_record_to_ets_table ~n"),
+			ets:new(table, [{keypos, ?PRIMARY_KEY_INDEX}]);
+		Pid ->
+			Pid ! {self(), get_table, TableName, ?PRIMARY_KEY_INDEX},
+			receive
+				{table_results, TableResult} -> 
+					TableResult;
+				_ -> 
+					io:format("Something went wrong in add_record_to_ets_table ~n"),
+					ets:new(table, [{keypos, ?PRIMARY_KEY_INDEX}])	
+			end
+	end,		
+	add_json_to_ets_table(Json, Table, TableName).
+add_json_to_ets_table(Json, Table, TableName) ->
+	RecordFieldNames = querly_helper:get_record_fields(TableName),
+	DefaultRecord = querly_helper:transform_to_record([], TableName, undefined, RecordFieldNames),
+	Record = build_record(Json, DefaultRecord, RecordFieldNames),
+	%?INFO("Here: ~p; ~p; ~p; ~p; ~p~n", [Json, DefaultRecord, RecordFieldNames, Record, Table]),
+	ets:insert(Table, Record).
+				
+update_ets_table(DatabaseName, PrimaryKey, Action) ->
+	JsonDoc = doc_get(DatabaseName, PrimaryKey),
+	case Action of
+		_ when Action == "add"; Action == "update" ->
+			Json = element(2, JsonDoc), 
+			add_json_to_ets_table(Json, DatabaseName);
+		_ ->
+			ok
+	end.
 
 handle_ets_update() ->
 	SubscriberPid = get_rabbitmq_subscriber_pid(?RABBITMQ_EXCHANGE, ?RABBITMQ_QUEUE, ?RABBITMQ_TYPE),
@@ -99,9 +130,40 @@ process_messages(MessageList) ->
 		fun(Message) -> 
 			{_QueueInformation, MessageContent} = Message,
 			{amqp_msg, _PayloadInformation, Payload} = MessageContent,
-			ChoppedMessagePayload = chop_nonprintable_characters(bitstring_to_list(Payload)),
-			io:format("PostChop - ~p~n", [ChoppedMessagePayload]) 
+			PayloadToChop = re:replace(bitstring_to_list(Payload), "[\\\"\\\\\"]", "", [{return,list}, global]),
+			ChoppedMessagePayload = chop_nonprintable_characters(PayloadToChop),
+			ContentStartIndex = string:str(ChoppedMessagePayload, "{Body:{") + string:len("{Body:{"),
+			ContentEndIndex = string:len(ChoppedMessagePayload) - 1,
+			Content = string:sub_string(ChoppedMessagePayload, ContentStartIndex, ContentEndIndex),
+			Tokens = string:tokens(Content, ","),
+			DatabaseName = find_token_value(Tokens, ":", "DatabaseName"),
+			PrimaryKey = find_token_value(Tokens, ":", "PrimaryKey"),
+			Action = find_token_value(Tokens, ":", "Action"),
+			update_ets_table(DatabaseName, PrimaryKey, Action)
 		end, MessageList).	
+
+find_token_value(Tokens, Delimiter, KeyToFind) ->
+	FilteredList = lists:filter(
+		fun(Token) -> 
+			Key = lists:nth(1, get_tokens_from_string(Token, Delimiter)),
+			Key == KeyToFind		
+		end, Tokens),
+	case FilteredList of
+		[] -> 
+			"";
+		TokenList ->
+			StringOfTokens = lists:nth(1, TokenList),
+			Tokenized = get_tokens_from_string(StringOfTokens, Delimiter),
+			case length(Tokenized) of
+				2 -> 
+					lists:nth(2, Tokenized);
+				_ ->
+					""
+			end
+	end.		
+
+get_tokens_from_string(StringToTokenize, Delimiter) ->
+	string:tokens(StringToTokenize, Delimiter).
 
 get_rabbitmq_subscriber_pid(Queue, Exchange, Type) ->
 	case whereis(rabbitmq_subscriber) of

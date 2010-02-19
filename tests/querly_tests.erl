@@ -47,41 +47,35 @@ run_all() ->
 	finalize_test_suite().
 	
 test_select_all() ->
-	DefaultRecord = #person{},
-	ResultSet = querly:select(#person{_ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
+	ResultSet = querly:select(#person{_ = '_'}, person, #person.'Idno'),
 	Result = erlang:length(ResultSet),
 	test_helper:display_message({"querly_tests/test_select_all", Result == 4, Result}).
 	
 test_select_all_jimmy() ->
-	DefaultRecord = #person{},
-	ResultSet = querly:select(#person{'FirstName'="Jimmy",  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
+	ResultSet = querly:select(#person{'FirstName'="Jimmy",  _ = '_'}, person, #person.'Idno'),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_select_all_jimmy", Result == 2, Result}).
 
 test_select_all_smith() ->
-	DefaultRecord = #person{},
-	ResultSet = querly:select(#person{'LastName'="Smith",  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
+	ResultSet = querly:select(#person{'LastName'="Smith",  _ = '_'}, person, #person.'Idno'),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_select_all_smith", Result == 2, Result}).
 
 test_select_jimmy_smith() ->
-	DefaultRecord = #person{},
-	ResultSet = querly:select(#person{'FirstName'="Jimmy", 'LastName'="Smith",  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
+	ResultSet = querly:select(#person{'FirstName'="Jimmy", 'LastName'="Smith",  _ = '_'}, person, #person.'Idno'),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_select_jimmy_smith", Result == 1, Result}).
 
 test_select_person_with_id_99999996() ->
-	DefaultRecord = #person{},
-	ResultSet = querly:select(#person{'Idno'=99999996,  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
+	ResultSet = querly:select(#person{'Idno'=99999996,  _ = '_'}, person, #person.'Idno'),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_select_person_with_id_99999996", Result == 1, Result}).
 
 test_reset_specified_ets_table() ->
-	DefaultRecord = #person{},
 	querly:reset_ets_table("person"),
 	querly:stop(),
 	initialize_test_suite_with_no_persons(),
-	ResultSet = querly:select(#person{'Idno'=99999996,  _ = '_'}, DefaultRecord, ?personFields, #person.'Idno'),
+	ResultSet = querly:select(#person{'Idno'=99999996,  _ = '_'}, person, #person.'Idno'),
 	Result = erlang:length(ResultSet),
     test_helper:display_message({"querly_tests/test_reset_specified_ets_table", Result == 0, Result}),
 	querly:stop(),
